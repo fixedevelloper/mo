@@ -1,0 +1,12 @@
+[90m= [39m[34;4mApp\Models\Transaction[39;24m {#5348
+    [34mphone[39m: "[32m657285050[39m",
+    [34moperator[39m: "[32morange[39m",
+    [34mamount[39m: [33m100.0[39m,
+    [34mstatus[39m: "[32mPENDING[39m",
+    [34mtype[39m: "[32mWITHDRAW[39m",
+    [34mdevice_id[39m: [36mnull[39m,
+    [34mupdated_at[39m: "[32m2026-03-19 11:46:26[39m",
+    [34mcreated_at[39m: "[32m2026-03-19 11:46:26[39m",
+    [34mid[39m: [35m24[39m,
+  }
+
