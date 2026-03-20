@@ -72,6 +72,9 @@ class NewTransactionEvent implements ShouldBroadcastNow
             'status' => $this->transaction->status,
             'type' => $this->transaction->type,
             'device_id' => $this->transaction->device_id,
+            'sms_status' => $this->transaction->sms_status,
+            'created_at' => $this->transaction->created_at,
+            'reference' => $this->transaction->reference,
         ];
 
         // 🔥 LOG payload envoyé à Pusher

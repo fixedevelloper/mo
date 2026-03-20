@@ -23,6 +23,7 @@ class SimulateTransaction extends Command
             'operator' => $operator,
             'amount' => $amount,
             'status' => 'PENDING',
+            'sms_status' => 'PENDING',
             'type' => 'WITHDRAW',
             'device_id' => null,
         ]);
@@ -45,6 +46,9 @@ class SimulateTransaction extends Command
             'operator' => $transaction->operator,
             'amount' => $transaction->amount,
             'status' => $transaction->status,
+            'sms_status' => $transaction->sms_status,
+            'created_at' => $transaction->created_at,
+            'reference' => $transaction->reference,
             'type' => $transaction->type,
             'device_id' => $transaction->device_id,
         ];

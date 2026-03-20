@@ -19,6 +19,7 @@ class Transaction extends Model
         'operator',
         'amount',
         'type',
+        'sms_status',
         'status',
         'device_id',
         'raw_sms',

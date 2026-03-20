@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Events\NewTransactionEvent;
 use App\Models\Transaction;
 use App\Models\Device;
+use App\Rules\PhoneNumber;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
@@ -22,16 +25,18 @@ class TransactionController extends Controller
             'data' => $transactions
         ]);
     }
+
     public function transactionPending()
     {
         $transactions = Transaction::with('device')
-            ->where('status','pending')
+            ->where('status', 'pending')
             ->orderBy('created_at', 'desc')->get();
         return response()->json([
             'success' => true,
             'data' => $transactions
         ]);
     }
+
     /**
      * Liste les transactions en attente
      */
@@ -51,13 +56,15 @@ class TransactionController extends Controller
     /**
      * Création d'une nouvelle transaction
      * { amount: 1000, operator: "orange", phone: "6570000000", type: "DEPOSIT" }
+     * @param Request $request
+     * @return JsonResponse
      */
     public function store(Request $request)
     {
         // Validation des champs
         $validator = Validator::make($request->all(), [
-            'phone' => 'required|string',
-            'operator' => 'required|string',
+            'phone' => ['required', new PhoneNumber],
+            'operator' => 'required|in:orange,mtn',
             'amount' => 'required|numeric',
             'type' => 'required|in:DEPOSIT,WITHDRAW',
         ]);
@@ -68,33 +75,47 @@ class TransactionController extends Controller
                 'errors' => $validator->errors()
             ], Response::HTTP_BAD_REQUEST);
         }
+        DB::beginTransaction();
+        try {
+            // Choisir automatiquement le device selon l'opérateur
+            $device = Device::where('operator', strtolower($request->operator))
+                ->where('status', 'ACTIVE')
+                ->first();
 
-        // Choisir automatiquement le device selon l'opérateur
-        $device = Device::where('operator', strtolower($request->operator))
-            ->where('status', 'ACTIVE')
-            ->first();
+            // Création de la transaction
+            $transaction = Transaction::create([
+                'phone' => $request->phone,
+                'operator' => $request->operator,
+                'amount' => $request->amount,
+                'type' => $request->type,
+                'status' => 'PENDING',
+                'sms_status' => 'PENDING',
+                'device_id' => $device ?->id,
+       ]);
+        // 🚀 Broadcast en temps réel via Pusher
+       // broadcast(new NewTransactionEvent($transaction))->toOthers();
+        broadcast(new NewTransactionEvent($transaction));
+        DB::commit();
+        return response()->json([
+            'success' => true,
+            'data' => $transaction
+        ], Response::HTTP_CREATED);
+        } catch (\Exception $exception) {
 
-        // Création de la transaction
-        $transaction = Transaction::create([
-            'phone' => $request->phone,
-            'operator' => $request->operator,
-            'amount' => $request->amount,
-            'type' => $request->type,
-            'status' => 'PENDING',
-            'device_id' => $device?->id,
-    ]);
+            return response()->json([
+                'success' => false,
+                'errors' => $exception->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
 
-    // 🚀 Broadcast en temps réel via Pusher
-   // broadcast(new NewTransactionEvent($transaction))->toOthers();
-     broadcast(new NewTransactionEvent($transaction));
-    return response()->json([
-        'success' => true,
-        'data' => $transaction
-    ], Response::HTTP_CREATED);
-}
+
+    }
 
     /**
      * Marquer une transaction comme PROCESSING
+     * @param $id
+     * @param Request $request
+     * @return JsonResponse
      */
     public function markProcessing($id, Request $request)
     {
@@ -108,9 +129,34 @@ class TransactionController extends Controller
             'data' => $transaction
         ]);
     }
+    public function updateStatus($id, Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:SUCCESS,FAILED,PROCESSING',
+            'sms_status' => 'required|in:SUCCESS,FAILED,PROCESSING,PENDING',
+            'raw_sms' => 'nullable|string',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        $transaction = Transaction::findOrFail($id);
+        $transaction->status = $request->status;
+        $transaction->sms_status = $request->sms_status;
+        $transaction->save();
 
+        return response()->json([
+            'success' => true,
+            'data' => $transaction
+        ]);
+    }
     /**
      * Marquer une transaction comme COMPLETE (SUCCESS / FAILED)
+     * @param $id
+     * @param Request $request
+     * @return JsonResponse
      */
     public function completeTransaction($id, Request $request)
     {

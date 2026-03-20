@@ -9,7 +9,7 @@ class PhoneNumber implements ValidationRule
 {
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (!preg_match('/^\+?[0-9]{8,15}$/', $value)) {
+        if (!preg_match('/^\+?[0-9]{9,9}$/', $value)) {
             $fail('Le numéro de téléphone est invalide.');
         }
     }

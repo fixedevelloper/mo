@@ -14,5 +14,6 @@ Route::prefix('transactions')->group(function () {
     Route::get('/pending', [TransactionController::class, 'transactionPending']);
     Route::post('/', [TransactionController::class, 'store']);
     Route::post('/{id}/processing', [TransactionController::class, 'markProcessing']);
+    Route::post('/{id}/update-status', [TransactionController::class, 'updateStatus']);
     Route::post('/{id}/complete', [TransactionController::class, 'completeTransaction']);
 });

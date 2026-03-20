@@ -22,6 +22,9 @@ return new class extends Migration
             $table->enum('status', ['PENDING', 'PROCESSING', 'SUCCESS', 'FAILED'])
                 ->default('PENDING')
                 ->comment('Statut de la transaction');
+            $table->enum('sms_status', ['PENDING', 'PROCESSING', 'SUCCESS', 'FAILED'])
+                ->default('PENDING')
+                ->comment('Statut du sms de la transaction');
 
             $table->string('device_id')->nullable()->comment('SIM ou device utilisé pour la transaction');
             $table->text('raw_sms')->nullable()->comment('SMS reçu pour valider la transaction');
